@@ -54,9 +54,11 @@
         var alien;
         var teclado;
         var fogo;
-        var moeda;
         var placar;
         var pontuacao = 0;
+
+        // LISTA PARA ARMAZENAR OS COLETÁVEIS (moeda e moeda prata).
+        var coletaveis = [];
 
         // Função no Phaser responsável por carregar os assets (imagens, sons, sprites, etc) -> preload.
         function preload() {
@@ -76,6 +78,9 @@
 
             // Imagem da moeda.
             this.load.image('moeda', 'assets/moeda.png');
+
+            // Imagem da moeda prata.
+            this.load.image('moeda_prata', 'assets/moeda_prata.png');
         }
 
         // Função no Phaser responsável por criar e posicionar objetos.
@@ -97,42 +102,46 @@
             teclado = this.input.keyboard.createCursorKeys();
 
             // Adicionando a plataforma na tela.
-            plataforma = this.physics.add.staticImage(larguraJogo / 2, alturaJogo / 2, 'plataforma_tijolo');
+            var plataforma = this.physics.add.staticImage(larguraJogo / 2, alturaJogo / 2, 'plataforma_tijolo');
 
             // Mais uma plataforma.
-            plataforma_2 = this.physics.add.staticImage(larguraJogo / 6, alturaJogo / 4, 'plataforma_tijolo');
+            var plataforma_2 = this.physics.add.staticImage(larguraJogo / 6, alturaJogo / 4, 'plataforma_tijolo');
 
             // Esse comando cria "barreiras físicas" entre os objetos indicados dentro dos parênteses.
             this.physics.add.collider(alien, plataforma);
             this.physics.add.collider(alien, plataforma_2);
 
-            // Adicionando moeda.
-            moeda = this.physics.add.sprite(larguraJogo / 2, 200, 'moeda');
+            // Criando coletáveis e armazenando na LISTA.
+            var moeda = this.physics.add.sprite(larguraJogo / 3, 200, 'moeda');
+            var moeda_prata = this.physics.add.sprite(larguraJogo / 1.5, 200, 'moeda_prata');
+
             moeda.setCollideWorldBounds(true); // Ativando as "barreiras" das bordas da tela para o objeto moeda.
             moeda.setBounce(0.7); // Movimento de "quicar" usando o comando "setBounce".
+            moeda_prata.setCollideWorldBounds(true);
+            moeda_prata.setBounce(0.7);
+
             this.physics.add.collider(moeda, plataforma); // Colisão entre a moeda e a plataforma.
+            this.physics.add.collider(moeda_prata, plataforma);
             this.physics.add.collider(moeda, plataforma_2);
+            this.physics.add.collider(moeda_prata, plataforma_2);
+
+            coletaveis.push(moeda, moeda_prata); // Adicionando os itens na lista
 
             // Criando o placar -> this.add.text(posX, posY, 'texto', {aparência})
-            placar = this.add.text(30, 30, 'Moedas:' + pontuacao, { fontSize: '45px', fill: '#495613' });
+            placar = this.add.text(30, 30, 'Moedas: ' + pontuacao, { fontSize: '45px', fill: '#495613' });
 
-            // Quando o alien encostar na moeda...
-            // Definindo um overlap para quando o alienígena encostar na moeda.
-            // -> this.physics.add.overlap(objeto1, objeto2, function(){ acontecimento }) -> quando os objetos 1 e 2 estiverem sobrepostos (overlap), uma certa sequência de acontecimentos deve ocorrer.
-            this.physics.add.overlap(alien, moeda, function () {
-                // Indicando que a moeda deve ficar invisível quando o overlap é detectado.
-                moeda.setVisible(false);
-                // Sorteando uma função randômica/aleatória com Phaser.Math.RND.between (min, max) um novo valor para a posição y (horizontal) da moeda e aplicamos a nova posição na moeda.
-                var posicaoMoeda_Y = Phaser.Math.RND.between(50, 650);
-                moeda.setPosition(posicaoMoeda_Y, 100);
-                // Indicando que deve ser somado +1 ao valor atual da pontuação.
-                pontuacao += 1;
-                // Atualizando os valores guardados em "placar".
-                placar.setText('Moedas:' + pontuacao);
-                // Ativa a visão da "nova moeda".
-                moeda.setVisible(true);
-            })
 
+            // Adicionando colisão entre alien e coletáveis da lista
+            coletaveis.forEach((item) => { // .forEach() percorre todos os itens da lista "coletaveis" (que contém moeda e coração). A variável item representa o coletável atual (a moeda ou o coração). Para cada item da lista, ele executa a função que está dentro das chaves.
+                this.physics.add.overlap(alien, item, function () { // Verificando se o alienígena tocou em um coletável.
+                    item.setVisible(false); // Esconde o coletável quando o alien toca nele.
+                    var novaPosicaoX = Phaser.Math.RND.between(50, 650); // Gera um número aleatório ( a nova posição horizontal X do coletável após ser recolhido).
+                    item.setPosition(novaPosicaoX, 100); // Muda a posição do item na tela.
+                    pontuacao += 1; // Soma 1 ponto ao placar toda vez que um item é coletado.
+                    placar.setText('Moedas: ' + pontuacao); // Atualiza o texto do placar com a nova pontuação.
+                    item.setVisible(true); // Reexibe o coletável depois de mudar sua posição.
+                });
+            });
         }
 
         function update() {
